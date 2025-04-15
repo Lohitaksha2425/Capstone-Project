@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🔥 Wildfire Detection - Live & Upload</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #121212;
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            text-align: center;
+        }
+
+        /* Main Container */
+        #main-container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+        }
+
+        /* Header Styling */
+        h1 {
+            color: #f8d800;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            color: #00d4ff;
+            margin-top: 10px;
+        }
+
+        /* Section Styling */
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #222;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+        }
+
+        /* Image Styling */
+        img {
+            width: 100%;
+            max-height: 500px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        img:hover {
+            transform: scale(1.02);
+        }
+
+        /* Buttons */
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+
+        #start-btn {
+            background-color: #28a745;
+        }
+
+        #stop-btn {
+            background-color: #dc3545;
+        }
+
+        #upload-btn {
+            background-color: #007bff;
+        }
+
+        button:hover {
+            opacity: 0.85;
+            transform: scale(1.05);
+        }
+
+        /* Upload Input */
+        input[type="file"] {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #555;
+            border-radius: 10px;
+            background-color: #333;
+            color: #fff;
+            width: 100%;
+        }
+
+        /* Status and Alerts */
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        /* Preview & Output */
+        #preview-container, #output-container {
+            margin-top: 20px;
+        }
+
+        /* Sensor Values */
+        #sensor-values {
+            padding: 10px;
+            background-color: #333;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: #0f0;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 30px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #main-container {
+                width: 95%;
+                padding: 10px;
+            }
+
+            img {
+                max-height: 300px;
+            }
+
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+    <script>
+        // Start Live Feed
+        function startFeed() {
+            fetch('/start_feed')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "started") {
+                        document.getElementById("video-feed").src = "/video_feed";
+                        document.getElementById("status").innerText = "🚀 Live feed started!";
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Stop Live Feed
+        function stopFeed() {
+            fetch('/stop_feed')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "stopped") {
+                        document.getElementById("video-feed").src = "";
+                        document.getElementById("status").innerText = "❌ Live feed stopped.";
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Preview Image Before Upload
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function () {
+                document.getElementById('preview').src = reader.result;
+                document.getElementById('preview-container').style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Upload and Process Image
+        function uploadImage() {
+            const formData = new FormData();
+            const imageFile = document.getElementById('image-upload').files[0];
+
+            if (!imageFile) {
+                alert("Please select an image to upload.");
+                return;
+            }
+
+            formData.append('image', imageFile);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.output) {
+                    const outputUrl = `/output/${data.output}`;
+                    document.getElementById('output-image').src = outputUrl;
+                    document.getElementById('output-container').style.display = 'block';
+                } else {
+                    alert("⚠️ Error processing the image.");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Fetch Sensor Values
+        function fetchSensorData() {
+            fetch('/sensor_data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('sensor-values').innerHTML = `
+                        🌡️ Temperature: ${data.temperature} °C <br>
+                        💧 Humidity: ${data.humidity} % <br>
+                        🛑 Smoke Level: ${data.smoke} ppm
+                    `;
+                })
+                .catch(error => console.error('Error fetching sensor data:', error));
+        }
+
+        // Refresh sensor values every 3 seconds
+        setInterval(fetchSensorData, 3000);
+    </script>
+</head>
+
+<body>
+    <!-- Main App Container -->
+    <div id="main-container">
+        <h1>🔥 Wildfire Detection System</h1>
+        <p>Real-time Monitoring and Image Detection using YOLO</p>
+
+        <!-- Live Feed Section -->
+        <div class="section">
+            <h2>📹 Live Inference</h2>
+            <img id="video-feed" src="" alt="Live Feed" />
+            <br>
+            <button id="start-btn" onclick="startFeed()">🚀 Start Live Feed</button>
+            <button id="stop-btn" onclick="stopFeed()">⏹️ Stop Live Feed</button>
+            <p id="status">💡 Feed is currently stopped.</p>
+        </div>
+
+
+        <!-- Image Upload Section -->
+        <div class="section">
+            <h2>📤 Upload Image for Detection</h2>
+            <input type="file" id="image-upload" accept="image/*" onchange="previewImage(event)">
+            
+            <!-- Image Preview Before Upload -->
+            <div id="preview-container" style="display: none;">
+                <h3>👀 Image Preview</h3>
+                <img id="preview" alt="Image Preview">
+                <br>
+                <button id="upload-btn" onclick="uploadImage()">🚀 Upload & Detect</button>
+            </div>
+
+            <!-- Output Image -->
+            <div id="output-container" style="display: none;">
+                <h3>✅ Detected Output</h3>
+                <img id="output-image" alt="Output Image">
+            </div>
+        </div>
+        
+        <!-- Sensor Values Section -->
+        <div class="section">
+            <h2>🛠️ Real-Time Sensor Values</h2>
+            <div id="sensor-values">
+                🌡️ Temperature: -- °C <br>
+                💧 Humidity: -- % <br>
+                🛑 Smoke Level: -- ppm
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            © 2024 Wildfire Detection System | Powered by Flask & YOLO
+        </footer>
+    </div>
+</body>
+</html>
